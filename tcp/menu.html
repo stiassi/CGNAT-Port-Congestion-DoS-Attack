@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DOSZILLA</title>
+  <style>
+    * { box-sizing: border-box; }
+    
+    body {
+      background: url('doszilla.jpg') center/cover no-repeat;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 10px #FFFF33;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 50px;
+      color: #FFFF33;
+      text-shadow: 0 0 20px #FFFF33, 0 0 40px #FFFF33;
+    }
+
+    .controls {
+      display: flex;
+      gap: 30px;
+      margin-top: 300px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 40px;
+      border-radius: 15px;
+    }
+
+    button {
+      background: transparent;
+      color: #FFFF33;
+      border: 2px solid #FFFF33;
+      padding: 30px 50px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      box-shadow: 0 0 10px #FFFF33, 0 0 20px #FFFF33 inset;
+      transition: all 0.2s ease-in-out;
+      font-weight: bold;
+      font-family: inherit;
+      min-width: 250px;
+    }
+
+    button:hover {
+      background: #FFFF33;
+      color: black;
+      box-shadow: 0 0 20px #FFFF33, 0 0 40px #FFFF33, 0 0 60px #FFFF33;
+      transform: scale(1.05);
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #aaa;
+      text-shadow: none;
+    }
+        h1 {
+      font-size: 3rem;
+      margin-bottom: 50px;
+      color: #FFFF33;
+      text-shadow: 0 0 20px #FFFF33, 0 0 40px #FFFF33;
+    }
+
+    h1 {
+      font-size: 5rem;
+      color: #FFFF33;
+      text-shadow: 0 0 20px #FFFF33, 0 0 40px #FFFF33;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+    <h1>DOSZILLA</h1>
+  <div class="controls">
+    <div>
+      <button onclick="location.href='/http1/fetch.html'">HTTP Fetch Requests</button>
+    </div>
+    <div>
+      <button onclick="location.href='/websockets/websocket.html'">WebSockets</button>
+    </div>
+  </div>
+</body>
+</html>

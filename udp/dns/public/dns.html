@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DNS CGNAT Port Exhaustion Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .controls { margin: 20px 0; }
+        .stats { margin: 20px 0; padding: 10px; background: #f0f0f0; }
+        button { padding: 10px 20px; margin: 5px; }
+        #log { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>DNS CGNAT Port Exhaustion Test</h1>
+    
+    <div class="controls">
+        <button onclick="startFlood()">Start DNS Flood</button>
+        <button onclick="stopFlood()">Stop</button>
+        <br>
+        <label>Queries per second: <input type="number" id="qps" value="10"></label>
+        <label>Duration (seconds): <input type="number" id="duration" value="60"></label>
+    </div>
+    
+    <div class="stats">
+        <div>Total Queries: <span id="total">0</span></div>
+        <div>Successful: <span id="success">0</span></div>
+        <div>Failed: <span id="failed">0</span></div>
+        <div>Rate: <span id="rate">0</span> q/s</div>
+    </div>
+    
+    <div id="log"></div>
+    
+    <script>
+        let intervalId = null;
+        let stats = { total: 0, success: 0, failed: 0 };
+        let startTime = null;
+        
+        function generateRandomDomain() {
+            const random = Math.random().toString(36).substring(2, 15);
+            return `${random}.test.local`;
+        }
+        
+        async function sendDNSQuery() {
+            const domain = generateRandomDomain();
+            stats.total++;
+            
+            const img = new Image();
+            const startTime = Date.now();
+            
+            img.onload = function() {
+                stats.success++;
+                const duration = Date.now() - startTime;
+                log(`OK: ${domain} - (${duration}ms)`);
+                updateStats();
+                this.remove();
+            };
+            
+            img.onerror = function() {
+                stats.failed++;
+                const duration = Date.now() - startTime;
+                log(`FAILED: ${domain} - (${duration}ms)`);
+                updateStats();
+                this.remove();
+            };
+            
+            img.src = `http://${domain}/pixel.gif?${Date.now()}`;
+            
+            setTimeout(() => {
+                if (img.parentNode) img.remove();
+            }, 5000);
+        }
+        
+        function startFlood() {
+            if (intervalId) return;
+            
+            const qps = parseInt(document.getElementById('qps').value);
+            const duration = parseInt(document.getElementById('duration').value) * 1000;
+            
+            stats = { total: 0, success: 0, failed: 0 };
+            startTime = Date.now();
+        
+            intervalId = setInterval(sendDNSQuery, 1000 / qps);
+            
+    
+            setTimeout(stopFlood, duration);
+            
+            log('attack started');
+        }
+        
+        function stopFlood() {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+                log('attack stopped');
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('total').textContent = stats.total;
+            document.getElementById('success').textContent = stats.success;
+            document.getElementById('failed').textContent = stats.failed;
+            
+            if (startTime) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const rate = (stats.total / elapsed).toFixed(2);
+                document.getElementById('rate').textContent = rate;
+            }
+        }
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

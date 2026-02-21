@@ -1,35 +1,122 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DNS CGNAT Port Exhaustion Test</title>
+    <title>DNS Query Flooding</title>
     <style>
-        body { font-family: Arial; padding: 20px; }
-        .controls { margin: 20px 0; }
-        .stats { margin: 20px 0; padding: 10px; background: #f0f0f0; }
-        button { padding: 10px 20px; margin: 5px; }
-        #log { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; font-family: monospace; font-size: 12px; }
+        body {
+            font-family: sans-serif;
+            background: #0d1b2a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: #90caf9;
+            text-shadow: 0 0 20px rgba(144, 202, 249, 0.3);
+            margin: 0 0 24px 0;
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats {
+            margin: 20px 0;
+            padding: 14px 24px;
+            background: #132338;
+            border: 1px solid #1e3a5f;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .stats div {
+            margin: 4px 0;
+            color: #90caf9;
+        }
+
+        button {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+            color: #fff;
+        }
+
+        button:hover { opacity: 0.85; }
+
+        button:first-of-type { background: #1565c0; }
+        button:last-of-type  { background: #0d47a1; }
+
+        label {
+            color: #90caf9;
+            margin: 0 8px;
+        }
+
+        input[type="number"] {
+            background: #132338;
+            border: 1px solid #1e3a5f;
+            border-radius: 4px;
+            color: #e0e0e0;
+            padding: 4px 8px;
+            width: 60px;
+        }
+
+        #log {
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #1e3a5f;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            background: #0a1520;
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+            color: #64b5f6;
+        }
     </style>
 </head>
 <body>
-    <h1>DNS CGNAT Port Exhaustion Test</h1>
-    
+    <h1>DNS Query Flooding</h1>
+
     <div class="controls">
-        <button onclick="startFlood()">Start DNS Flood</button>
-        <button onclick="stopFlood()">Stop</button>
-        <br>
-        <label>Queries per second: <input type="number" id="qps" value="10"></label>
-        <label>Duration (seconds): <input type="number" id="duration" value="60"></label>
+        <div>
+            <button onclick="startFlood()">Start DNS Flood</button>
+            <button onclick="stopFlood()">Stop</button>
+        </div>
+        <div>
+            <label>Queries per second: <input type="number" id="qps" value="10"></label>
+            <label>Duration (seconds): <input type="number" id="duration" value="60"></label>
+        </div>
     </div>
-    
+
     <div class="stats">
         <div>Total Queries: <span id="total">0</span></div>
         <div>Successful: <span id="success">0</span></div>
         <div>Failed: <span id="failed">0</span></div>
         <div>Rate: <span id="rate">0</span> q/s</div>
     </div>
-    
+
     <div id="log"></div>
-    
+
     <script>
         let intervalId = null;
         let stats = { total: 0, success: 0, failed: 0 };
@@ -81,7 +168,6 @@
         
             intervalId = setInterval(sendDNSQuery, 1000 / qps);
             
-    
             setTimeout(stopFlood, duration);
             
             log('attack started');

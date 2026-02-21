@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DOSZILLA</title>
+  <style>
+body {
+  font-family: sans-serif;
+  background: #0d1b2a;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+h1 {
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: #90caf9;
+  text-shadow: 0 0 20px rgba(144, 202, 249, 0.3);
+  margin: 0 0 24px 0;
+}
+
+.layout {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+}
+
+.layout img {
+  width: 420px;
+  height: 560px;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 16px;
+  border: 1px solid #1e3a5f;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+button {
+  padding: 14px 36px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity 0.2s;
+  color: #fff;
+  background: #1565c0;
+  letter-spacing: 1px;
+  text-align: left;
+}
+
+button:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <img src="/doszillaa.jpg" alt="Doszilla" />
+    <div class="content">
+      <h1>DOSZILLA TCP</h1>
+      <div class="buttons">
+        <button onclick="location.href='/http1/fetch.html'">HTTP Fetch Requests</button>
+        <button onclick="location.href='/websockets/websocket.html'">WebSockets</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

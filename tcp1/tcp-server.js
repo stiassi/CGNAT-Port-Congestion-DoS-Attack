@@ -40,7 +40,7 @@ function serveFile(res, filePath) {
   });
 }
 
-// http requests 
+
 function handleRequest(req, res) {
   setCorsHeaders(res);
 
@@ -50,7 +50,7 @@ function handleRequest(req, res) {
   }
 
   const urlPath = req.url.split('?')[0];
-
+  // endpoint which just closes connectios immediately after the handshake
   if (urlPath === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     return res.end('OK\n');
@@ -58,7 +58,6 @@ function handleRequest(req, res) {
 
   // endpoint for holding connections
   if (urlPath === '/hold') {
-    console.log(`[HOLD] ${req.method} ${req.url} from ${req.socket.remoteAddress}:${req.socket.remotePort}`);
     res.writeHead(200, {
       'Content-Type': 'text/plain',
       'Cache-Control': 'no-store'
@@ -83,7 +82,7 @@ function handleRequest(req, res) {
   else if (urlPath === '/websocket') {
     filePath = path.join(__dirname, 'websockets/websocket.html');
   } else if (urlPath === '/fetch') {
-    filePath = path.join(__dirname, 'http1/fetch.html');
+    filePath = path.join(__dirname, 'http1/index.html');
   } else {
     filePath = path.join(__dirname, urlPath);
   }
@@ -99,7 +98,6 @@ let connectionId = 0;
 
 wss.on('connection', (ws, req) => {
   const id = ++connectionId;
-  console.log(`[WS] #${id} connected from ${req.socket.remoteAddress}`);
 
   ws.send(JSON.stringify({ type: 'welcome', id }));
 
@@ -107,24 +105,24 @@ wss.on('connection', (ws, req) => {
     try {
       ws.send(JSON.stringify({ type: 'echo', id, data: msg.toString() }));
     } catch (err) {
-      console.error(`[WS] #${id} send error:`, err.message);
+      console.error(`Websockets ${id} error:`, err.message);
     }
   });
 
-  ws.on('close', () => console.log(`[WS] #${id} closed`));
-  ws.on('error', (err) => console.error(`[WS] #${id} error:`, err.message));
+  ws.on('close', () => console.log(`tschüss Websocket #${id}`));
+  ws.on('error', (err) => console.error(`Websocket #${id} error:`, err.message));
 });
 
 // start server
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is here ${PORT}`);
   console.log(`Menu:       http://doszilla:${PORT}/`);
   console.log(`WebSocket: http://doszilla:${PORT}/websocket`);
-  console.log(`HTTP fetchh erquests:  http://doszilla:${PORT}/fetch`);
+  console.log(`HTTP fetch erquests:  http://doszilla:${PORT}/fetch`);
 });
 
 process.on('SIGTERM', () => {
-  console.log('Exit');
+  console.log('Bye bye server');
   wss.clients.forEach((client) => client.close(1001, 'Exiting server'));
   server.close(() => process.exit(0));
 });

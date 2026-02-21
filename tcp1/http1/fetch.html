@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DOSZILLA - HTTP Flood</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #0d1b2a;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: #90caf9;
+      text-shadow: 0 0 20px rgba(144, 202, 249, 0.3);
+      margin: 0 0 24px 0;
+      text-align: center;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 8px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: opacity 0.2s;
+      color: #fff;
+    }
+
+    button:hover:not(:disabled) { opacity: 0.85; }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #startHoldButton  { background: #1565c0; }
+    #startCloseButton { background: #1976d2; }
+    #stopButton       { background: #0d47a1; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .stat-box {
+      background: #132338;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #1e3a5f;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #90caf9;
+    }
+
+    .stat-label {
+      color: #64b5f6;
+      margin-top: 5px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>FETCH REQUESTS</h1>
+
+  <div class="buttons">
+    <button id="startHoldButton">Hold Connections</button>
+    <button id="startCloseButton">Close Immediately</button>
+    <button id="stopButton" disabled>Stop</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-box">
+      <div class="stat-value" id="pending">0</div>
+      <div class="stat-label">Pending</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="completed">0</div>
+      <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="errors">0</div>
+      <div class="stat-label">Errors</div>
+    </div>
+  </div>
+
+  <script>
+    // target number of fetch requests 
+    const NUM_CONNECTIONS = 200;
+
+    const state = {
+      controllers: [],
+      pending: 0,
+      completed: 0,
+      errors: 0
+    };
+
+    const ui = {
+      startHoldButton:  document.getElementById('startHoldButton'),
+      startCloseButton: document.getElementById('startCloseButton'),
+      stopButton:       document.getElementById('stopButton'),
+      pending:          document.getElementById('pending'),
+      completed:        document.getElementById('completed'),
+      errors:           document.getElementById('errors')
+    };
+
+    // build url 
+    function getUrl(endpoint) {
+      const port = location.port || (location.protocol === 'https:' ? '443' : '80');
+      return `${location.protocol}//${location.hostname}:${port}${endpoint}`;
+    }
+
+    function updateUI() {
+      ui.pending.textContent = state.pending;
+      ui.completed.textContent = state.completed;
+      ui.errors.textContent = state.errors;
+      ui.stopButton.disabled = state.controllers.length === 0;
+    }
+
+    function openConnections(endpoint) {
+      const url = getUrl(endpoint);
+
+      for (let i = 0; i < NUM_CONNECTIONS; i++) {
+        const controller = new AbortController();
+        state.controllers.push(controller);
+
+        fetch(`${url}?id=${i}`, {
+          cache: 'no-store',
+          signal: controller.signal
+        })
+          .then(res => res.text())
+          .then(() => {
+            state.pending = Math.max(0, state.pending - 1);
+            state.completed++;
+            updateUI();
+          })
+          .catch(err => {
+            state.pending = Math.max(0, state.pending - 1);
+            if (err.name !== 'AbortError') {
+              state.errors++;
+            }
+            updateUI();
+          });
+
+        state.pending++;
+      }
+      updateUI();
+    }
+
+    function stopAll() {
+      state.controllers.forEach(controller => {
+        try { controller.abort(); } catch (e) {}
+      });
+      state.controllers = [];
+      state.pending = 0;
+      updateUI();
+    }
+    // button fot holding connections
+    ui.startHoldButton.onclick  = () => openConnections('/hold');
+    // button for closing connections immediately after the handshake
+    ui.startCloseButton.onclick = () => openConnections('/health');
+    ui.stopButton.onclick = stopAll;
+    updateUI();
+  </script>
+</body>
+</html>

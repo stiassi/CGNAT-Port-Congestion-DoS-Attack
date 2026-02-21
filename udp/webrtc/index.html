@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UDP Hold</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #0d1b2a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: #90caf9;
+            text-shadow: 0 0 20px rgba(144, 202, 249, 0.3);
+            margin: 0;
+        }
+
+        button {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.85; }
+
+        #start { background: #1565c0; color: #fff; }
+        #stop  { background: #0d47a1; color: #fff; }
+
+        #status {
+            font-weight: bold;
+            color: #64b5f6;
+        }
+
+        .buttons { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <h1>WEBRTC</h1>
+    <div class="buttons">
+        <button id="start">Start</button>
+        <button id="stop">Stop</button>
+    </div>
+    <p>Status: <span id="status">Idle</span></p>
+
+    <script>
+        const TARGET = 10;
+        const TURN_CONFIG = {
+            iceTransportPolicy: "relay",
+            iceServers: [{
+                urls: "turn:198.51.100.20:443?transport=udp",
+                username: "janus",
+                credential: "topsecret"
+            }]
+        };
+
+        let pcs = [];
+
+        async function createAllocation() {
+            const pc = new RTCPeerConnection(TURN_CONFIG);
+            pcs.push(pc);
+            pc.createDataChannel("x");
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+        }
+
+        document.getElementById("start").onclick = async () => {
+            pcs = [];
+            document.getElementById("status").textContent = "Running";
+            for (let i = 0; i < TARGET; i++) {
+                await createAllocation();
+            }
+        };
+
+        document.getElementById("stop").onclick = () => {
+            pcs.forEach(pc => pc.close());
+            pcs = [];
+            document.getElementById("status").textContent = "Stopped";
+        };
+    </script>
+</body>
+</html>

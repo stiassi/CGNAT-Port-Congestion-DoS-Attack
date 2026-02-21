@@ -1,0 +1,24 @@
+{
+    admin off
+    servers {
+        protocols h1 h2 h3
+    }
+}
+
+doszilla:443, *.doszilla:443 {
+    tls /certs/cert.pem /certs/cert.key
+    
+    header {
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, OPTIONS, HEAD"
+        Access-Control-Allow-Headers "*"
+        Access-Control-Expose-Headers "*"
+        Alt-Svc "h3=\":443\"; ma=2592000"
+    }
+    
+    @options method OPTIONS
+    respond @options 204
+    
+    root * /usr/share/caddy
+    file_server
+}

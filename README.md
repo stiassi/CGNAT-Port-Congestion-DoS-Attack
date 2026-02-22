@@ -7,8 +7,8 @@ exceeding 90% in cellular networks globally. By multiplexing hundreds of subscri
 and UDP ports, typically ranging from 512 to 4096 ports.
 
 This bachelor's thesis investigates whether malicious web pages can exploit standard browser net-
-working APIs to exhaust CGNAT port allocations, thereby denying user’s internet connectivity to the victim webserver. We systematically evaluate port exhaustion attacks
-across multiple protocols (HTTP/1.1, WebSocket, HTTP/3 and WebRTC) using three major
+working APIs to exhaust CGNAT port allocations, thereby denying user’s internet connectivity to the attacker-chosen webserver. We systematically evaluate port exhaustion attacks
+across multiple protocols (HTTP/1.1, WebSocket, QUIC and WebRTC) using three major
 browsers (Chrome, Firefox and Edge) against a controlled, Linux-based CGNAT testbed.
 
 Our experiments demonstrate that browser-based attacks can consume 510–1,099 TCP ports and over 2,000 UDP ports from a single browser instance. Realistic CGNAT allocations of 512–1,024 ports can be completely exhausted through single-protocol attacks.
